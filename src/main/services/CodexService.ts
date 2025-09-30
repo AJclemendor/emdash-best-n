@@ -198,7 +198,13 @@ export class CodexService extends EventEmitter {
   /**
    * Send message to a Codex agent with streaming output
    */
-  public async sendMessageStream(workspaceId: string, message: string, conversationId?: string): Promise<void> {
+  public async sendMessageStream(
+    workspaceId: string,
+    message: string,
+    conversationId?: string,
+    model?: string,
+    reasoningEffort?: string
+  ): Promise<void> {
     // Find agent for this workspace
 
     const agent = Array.from(this.agents.values()).find((a) => a.workspaceId === workspaceId);
@@ -234,7 +240,21 @@ export class CodexService extends EventEmitter {
 
     try {
       // Spawn codex directly with args to avoid shell quoting issues (backticks, quotes, etc.)
-      const args = ['exec', '--sandbox', 'workspace-write', message];
+      const args = ['exec', '--sandbox', 'workspace-write'];
+
+      // Add model flag if specified
+      if (model) {
+        args.push('-m', model);
+      }
+
+      // Add reasoning effort config if specified
+      if (reasoningEffort) {
+        args.push('-c', `model_reasoning_effort=${reasoningEffort}`);
+      }
+
+      // Add the message as the last argument
+      args.push(message);
+
       console.log(
         `Executing: codex ${args.map((a) => (a.includes(' ') ? '"' + a + '"' : a)).join(' ')} in ${agent.worktreePath}`
       );

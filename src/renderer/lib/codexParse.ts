@@ -10,9 +10,36 @@ export interface ParsedCodexOutput {
   response: string
   actions?: string[]
   hasCodex?: boolean
+  model?: string
+  provider?: string
 }
 
 const TS_LINE = /^\[[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\]]+\]/
+
+function extractModelInfo(raw: string): { model?: string; provider?: string } {
+  const lines = raw.split(/\r?\n/)
+  let model: string | undefined
+  let provider: string | undefined
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    // Look for "model: gpt-5" or "[timestamp] model: gpt-5"
+    const modelMatch = trimmed.match(/^(?:\[[^\]]+\]\s*)?model:\s*(.+)$/i)
+    if (modelMatch) {
+      model = modelMatch[1].trim()
+    }
+    // Look for "provider: openai" or "[timestamp] provider: openai"
+    const providerMatch = trimmed.match(/^(?:\[[^\]]+\]\s*)?provider:\s*(.+)$/i)
+    if (providerMatch) {
+      provider = providerMatch[1].trim()
+    }
+    // Stop after we've seen both or after we pass the header section
+    if (model && provider) break
+    if (TS_LINE.test(trimmed) && (trimmed.includes('thinking') || trimmed.includes('codex'))) break
+  }
+
+  return { model, provider }
+}
 
 function extractActions(reasoning: string): { cleaned: string; actions: string[] } {
   if (!reasoning) return { cleaned: reasoning, actions: [] }
@@ -33,6 +60,7 @@ function extractActions(reasoning: string): { cleaned: string; actions: string[]
 export function parseCodexOutput(raw: string): ParsedCodexOutput {
   if (!raw) return { response: '' }
 
+  const { model, provider } = extractModelInfo(raw)
   const lines = raw.split(/\r?\n/)
 
   // Find last thinking/codex markers to support multiple blocks
@@ -61,7 +89,7 @@ export function parseCodexOutput(raw: string): ParsedCodexOutput {
     const response = lines.slice(codexIdx + 1, end).join('\n').trim()
     if (response || reasoning) {
       const { cleaned, actions } = extractActions(reasoning)
-      return { reasoning: cleaned || undefined, response, actions }
+      return { reasoning: cleaned || undefined, response, actions, model, provider }
     }
   }
 
@@ -69,7 +97,7 @@ export function parseCodexOutput(raw: string): ParsedCodexOutput {
   if (thinkingIdx !== -1 && codexIdx === -1) {
     const reasoning = lines.slice(thinkingIdx + 1).join('\n').trim()
     const { cleaned, actions } = extractActions(reasoning)
-    return { reasoning: cleaned || undefined, response: '', actions }
+    return { reasoning: cleaned || undefined, response: '', actions, model, provider }
   }
 
   // If we have only a codex marker (no explicit thinking), treat everything
@@ -80,7 +108,7 @@ export function parseCodexOutput(raw: string): ParsedCodexOutput {
       if (TS_LINE.test(lines[i])) { end = i; break }
     }
     const response = lines.slice(codexIdx + 1, end).join('\n').trim()
-    return { response }
+    return { response, model, provider }
   }
 
   // Fallback: strip known header/footer noise and return remainder as response
@@ -107,7 +135,7 @@ export function parseCodexOutput(raw: string): ParsedCodexOutput {
     .join('\n')
     .trim()
 
-  return { response: cleaned }
+  return { response: cleaned, model, provider }
 }
 
 // Streaming-safe parser: collects only lines within [thinking] and [codex]
@@ -115,6 +143,8 @@ export function parseCodexOutput(raw: string): ParsedCodexOutput {
 // user prompts or shell output during generation.
 export function parseCodexStream(raw: string): ParsedCodexOutput {
   if (!raw) return { response: '' }
+
+  const { model, provider } = extractModelInfo(raw)
 
   // Normalize: ensure timestamps start on new lines and strip CR
   const normalized = raw
@@ -196,5 +226,7 @@ export function parseCodexStream(raw: string): ParsedCodexOutput {
     response: responseBuf.join('\n').trim(),
     actions,
     hasCodex: codexSeen,
+    model,
+    provider,
   }
 }

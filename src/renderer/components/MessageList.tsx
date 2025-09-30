@@ -184,6 +184,11 @@ const MessageList: React.FC<MessageListProps> = ({
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {(parsed?.model || message.model || message.provider) ? (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        {parsed?.model || message.model || (message.provider === 'claude' ? 'Claude Code' : providerId === 'claude' ? 'Claude Code' : null)}
+                      </div>
+                    ) : null}
                     {parsed?.reasoning ? (
                       <Reasoning className="w-full" isStreaming={false} defaultOpen={false}>
                         <ReasoningTrigger />
@@ -207,6 +212,11 @@ const MessageList: React.FC<MessageListProps> = ({
                   if (awaitingThinking) return (<ThinkingDots />)
                   return (
                     <div className="space-y-3">
+                      {parsed.model ? (
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                          {parsed.model}
+                        </div>
+                      ) : null}
                       {parsed.reasoning ? (
                         <Reasoning className="w-full" isStreaming={!!isStreaming} defaultOpen={false}>
                           <ReasoningTrigger />
@@ -222,6 +232,11 @@ const MessageList: React.FC<MessageListProps> = ({
                 })()
               ) : (
                 <div className="space-y-3">
+                  {providerId === 'claude' ? (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      Claude Code
+                    </div>
+                  ) : null}
                   {streamingOutput && streamingOutput.trim().length > 0 ? (
                     <Response>{streamingOutput}</Response>
                   ) : null}

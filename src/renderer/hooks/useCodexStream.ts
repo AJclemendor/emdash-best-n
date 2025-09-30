@@ -4,6 +4,7 @@ import {
   defaultPipeline,
   type FilterContext,
 } from "../lib/filters";
+import { parseCodexOutput } from "../lib/codexParse";
 
 interface UseCodexStreamOptions {
   workspaceId: string;
@@ -20,7 +21,7 @@ interface UseCodexStreamResult {
   isStreaming: boolean;
   awaitingThinking: boolean;
   seconds: number;
-  send: (text: string, attachments?: string) => Promise<{ success: boolean; error?: string }>;
+  send: (text: string, attachments?: string, model?: string, reasoningEffort?: string) => Promise<{ success: boolean; error?: string }>;
   cancel: () => Promise<{ success: boolean; error?: string }>;
   appendMessage: (message: Message) => void;
 }
@@ -190,7 +191,7 @@ const useCodexStream = (
   }, []);
 
   const send = useCallback(
-    async (text: string, attachments: string = "") => {
+    async (text: string, attachments: string = "", model?: string, reasoningEffort?: string) => {
       if (!normalizedOptions) {
         return { success: false, error: "workspace-unavailable" };
       }
@@ -242,7 +243,9 @@ const useCodexStream = (
         await window.electronAPI.codexSendMessageStream(
           normalizedOptions.workspaceId,
           `${text}${attachments ?? ""}`,
-          conversationIdRef.current ?? undefined
+          conversationIdRef.current ?? undefined,
+          model,
+          reasoningEffort
         );
         return { success: true };
       } catch (error) {
@@ -519,11 +522,16 @@ const useCodexStream = (
         conversationId: activeConversationId,
       });
 
+      // Extract model info from the raw output
+      const parsed = parseCodexOutput(rawOutput);
+
       const agentMessage: Message = {
         id: Date.now().toString(),
         content: renderedContent,
         sender: "agent",
         timestamp: new Date(),
+        model: parsed.model,
+        provider: 'codex',
       };
 
       setMessages((prev) => [...prev, agentMessage]);

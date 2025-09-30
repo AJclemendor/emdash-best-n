@@ -8,6 +8,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectIt
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 import { useFileIndex } from "../hooks/useFileIndex";
 import FileTypeIcon from "./ui/file-type-icon";
+import type { CodexModel, CodexReasoningEffort } from "../types/chat";
 
 interface ChatInputProps {
   value: string;
@@ -23,6 +24,10 @@ interface ChatInputProps {
   provider?: 'codex' | 'claude';
   onProviderChange?: (p: 'codex' | 'claude') => void;
   selectDisabled?: boolean;
+  codexModel?: CodexModel;
+  onCodexModelChange?: (m: CodexModel) => void;
+  codexReasoningEffort?: CodexReasoningEffort;
+  onCodexReasoningEffortChange?: (r: CodexReasoningEffort) => void;
 }
 
 const MAX_LOADING_SECONDS = 60 * 60; // 60 minutes
@@ -64,6 +69,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   provider = 'codex',
   onProviderChange,
   selectDisabled = false,
+  codexModel = 'gpt-5',
+  onCodexModelChange,
+  codexReasoningEffort = 'high',
+  onCodexReasoningEffortChange,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   // Provider is controlled by parent (codex | claude)
@@ -240,51 +249,98 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
 
           <div className="flex items-center justify-between px-4 py-3 rounded-b-xl">
-            <div className="relative inline-block w-[12rem]">
-              <Select
-                value={provider}
-                onValueChange={(v) => { if (!selectDisabled) onProviderChange && onProviderChange(v as 'codex' | 'claude') }}
-                disabled={selectDisabled}
-              >
-                {selectDisabled ? (
-                  <TooltipProvider delayDuration={250}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SelectTrigger aria-disabled className={`h-9 bg-gray-100 dark:bg-gray-700 border-none ${selectDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
-                          <div className="flex items-center gap-2">
-                            <img src={provider === 'claude' ? claudeLogo : openaiLogo} alt="Provider" className="w-4 h-4 shrink-0" />
-                            <SelectValue placeholder="Select provider" />
-                          </div>
-                        </SelectTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Provider is locked for this conversation.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ) : (
-                  <SelectTrigger className="h-9 bg-gray-100 dark:bg-gray-700 border-none">
-                    <div className="flex items-center gap-2">
-                      <img src={provider === 'claude' ? claudeLogo : openaiLogo} alt="Provider" className="w-4 h-4 shrink-0" />
-                      <SelectValue placeholder="Select provider" />
-                    </div>
-                  </SelectTrigger>
-                )}
-                <SelectContent>
-                  <SelectItem value="codex">
-                    <div className="flex items-center gap-2">
-                      <img src={openaiLogo} alt="Codex" className="w-4 h-4" />
-                      <SelectItemText>Codex</SelectItemText>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="claude">
-                    <div className="flex items-center gap-2">
-                      <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
-                      <SelectItemText>Claude Code</SelectItemText>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-2">
+              <div className="relative inline-block w-[12rem]">
+                <Select
+                  value={provider}
+                  onValueChange={(v) => { if (!selectDisabled) onProviderChange && onProviderChange(v as 'codex' | 'claude') }}
+                  disabled={selectDisabled}
+                >
+                  {selectDisabled ? (
+                    <TooltipProvider delayDuration={250}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <SelectTrigger aria-disabled className={`h-9 bg-gray-100 dark:bg-gray-700 border-none ${selectDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                            <div className="flex items-center gap-2">
+                              <img src={provider === 'claude' ? claudeLogo : openaiLogo} alt="Provider" className="w-4 h-4 shrink-0" />
+                              <SelectValue placeholder="Select provider" />
+                            </div>
+                          </SelectTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Provider is locked for this conversation.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <SelectTrigger className="h-9 bg-gray-100 dark:bg-gray-700 border-none">
+                      <div className="flex items-center gap-2">
+                        <img src={provider === 'claude' ? claudeLogo : openaiLogo} alt="Provider" className="w-4 h-4 shrink-0" />
+                        <SelectValue placeholder="Select provider" />
+                      </div>
+                    </SelectTrigger>
+                  )}
+                  <SelectContent>
+                    <SelectItem value="codex">
+                      <div className="flex items-center gap-2">
+                        <img src={openaiLogo} alt="Codex" className="w-4 h-4" />
+                        <SelectItemText>Codex</SelectItemText>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="claude">
+                      <div className="flex items-center gap-2">
+                        <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
+                        <SelectItemText>Claude Code</SelectItemText>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {provider === 'codex' && (
+                <>
+                  <div className="relative inline-block w-[10rem]">
+                    <Select
+                      value={codexModel}
+                      onValueChange={(v) => onCodexModelChange && onCodexModelChange(v as CodexModel)}
+                    >
+                      <SelectTrigger className="h-9 bg-gray-100 dark:bg-gray-700 border-none text-xs">
+                        <SelectValue placeholder="Model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gpt-5">
+                          <SelectItemText>GPT-5</SelectItemText>
+                        </SelectItem>
+                        <SelectItem value="gpt-5-codex">
+                          <SelectItemText>GPT-5-Codex</SelectItemText>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="relative inline-block w-[9rem]">
+                    <Select
+                      value={codexReasoningEffort}
+                      onValueChange={(v) => onCodexReasoningEffortChange && onCodexReasoningEffortChange(v as CodexReasoningEffort)}
+                    >
+                      <SelectTrigger className="h-9 bg-gray-100 dark:bg-gray-700 border-none text-xs">
+                        <SelectValue placeholder="Reasoning" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">
+                          <SelectItemText>Low Reasoning</SelectItemText>
+                        </SelectItem>
+                        <SelectItem value="medium">
+                          <SelectItemText>Medium Reasoning</SelectItemText>
+                        </SelectItem>
+                        <SelectItem value="high">
+                          <SelectItemText>High Reasoning</SelectItemText>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex items-center gap-2">

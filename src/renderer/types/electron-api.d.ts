@@ -72,7 +72,7 @@ declare global {
       codexCheckInstallation: () => Promise<{ success: boolean; isInstalled?: boolean; error?: string }>
       codexCreateAgent: (workspaceId: string, worktreePath: string) => Promise<{ success: boolean; agent?: any; error?: string }>
       codexSendMessage: (workspaceId: string, message: string) => Promise<{ success: boolean; response?: any; error?: string }>
-      codexSendMessageStream: (workspaceId: string, message: string) => Promise<{ success: boolean; error?: string }>
+      codexSendMessageStream: (workspaceId: string, message: string, conversationId?: string, model?: string, reasoningEffort?: string) => Promise<{ success: boolean; error?: string }>
       codexStopStream: (workspaceId: string) => Promise<{ success: boolean; stopped?: boolean; error?: string }>
       codexGetAgentStatus: (workspaceId: string) => Promise<{ success: boolean; agent?: any; error?: string }>
       codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>
@@ -151,7 +151,7 @@ export interface ElectronAPI {
   codexCheckInstallation: () => Promise<{ success: boolean; isInstalled?: boolean; error?: string }>
   codexCreateAgent: (workspaceId: string, worktreePath: string) => Promise<{ success: boolean; agent?: any; error?: string }>
   codexSendMessage: (workspaceId: string, message: string) => Promise<{ success: boolean; response?: any; error?: string }>
-  codexSendMessageStream: (workspaceId: string, message: string, conversationId?: string) => Promise<{ success: boolean; error?: string }>
+  codexSendMessageStream: (workspaceId: string, message: string, conversationId?: string, model?: string, reasoningEffort?: string) => Promise<{ success: boolean; error?: string }>
   codexStopStream: (workspaceId: string) => Promise<{ success: boolean; stopped?: boolean; error?: string }>
   codexGetStreamTail: (workspaceId: string) => Promise<{ success: boolean; tail?: string; startedAt?: string; error?: string }>
   codexGetAgentStatus: (workspaceId: string) => Promise<{ success: boolean; agent?: any; error?: string }>

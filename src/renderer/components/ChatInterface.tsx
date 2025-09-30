@@ -6,8 +6,9 @@ import MessageList from "./MessageList";
 import useCodexStream from "../hooks/useCodexStream";
 import useClaudeStream from "../hooks/useClaudeStream";
 import { useProviderPreference } from "../hooks/useProviderPreference";
+import { useCodexSettings } from "../hooks/useCodexSettings";
 import { buildAttachmentsSection } from "../lib/attachments";
-import { Workspace, Message } from "../types/chat";
+import { Workspace, Message, CodexModel, CodexReasoningEffort } from "../types/chat";
 
 declare const window: Window & {
   electronAPI: {
@@ -39,6 +40,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
   const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
   const [claudeInstructions, setClaudeInstructions] = useState<string | null>(null);
   const [agentCreated, setAgentCreated] = useState(false);
+  // Codex settings with persistence
+  const { model: codexModel, setModel: setCodexModel, reasoningEffort: codexReasoningEffort, setReasoningEffort: setCodexReasoningEffort } = useCodexSettings(workspace.id);
   // Provider is managed via useProviderPreference
   const initializedConversationRef = useRef<string | null>(null);
 
@@ -181,7 +184,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
       toast({ title: 'Claude Code not installed', description: 'Install Claude Code CLI and login first. See instructions below.', variant: 'destructive' })
       return
     }
-    
+
     const activeConversationId = provider === 'codex' ? codexStream.conversationId : claudeStream.conversationId
     if (!activeConversationId) return;
 
@@ -195,7 +198,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
     );
 
     const result = provider === 'codex'
-      ? await codexStream.send(inputValue, attachmentsSection)
+      ? await codexStream.send(inputValue, attachmentsSection, codexModel, codexReasoningEffort)
       : await claudeStream.send(inputValue, attachmentsSection)
     if (!result.success) {
       if (result.error && result.error !== "stream-in-progress") {
@@ -294,6 +297,10 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
         onProviderChange={(p) => setProvider(p)}
         selectDisabled={providerLocked}
         disabled={provider === 'claude' && isClaudeInstalled === false}
+        codexModel={codexModel}
+        onCodexModelChange={setCodexModel}
+        codexReasoningEffort={codexReasoningEffort}
+        onCodexReasoningEffortChange={setCodexReasoningEffort}
       />
     </div>
   );

@@ -141,7 +141,7 @@ const useClaudeStream = (options?: Options | null): Result => {
     if (!raw) return
     const convoId = conversationIdRef.current
     if (!convoId) return
-    const agentMsg: Message = { id: Date.now().toString(), content: raw, sender: 'agent', timestamp: new Date() }
+    const agentMsg: Message = { id: Date.now().toString(), content: raw, sender: 'agent', timestamp: new Date(), provider: 'claude' }
     setMessages((prev) => [...prev, agentMsg])
     try { await window.electronAPI.saveMessage({ id: agentMsg.id, conversationId: convoId, content: agentMsg.content, sender: agentMsg.sender }) } catch {}
     bufferRef.current = ''; setStreamingOutput('')
